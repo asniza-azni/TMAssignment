@@ -23,7 +23,7 @@ namespace ConsoleApp
         static void Main(string[] args)
         {
             OuterResponse outerResponse = new OuterResponse();
-            bool tryAgain = true;
+            bool tryAgain = true, withComma = true;
             string address, input;
             // Display title as the C# console calculator app.
             Console.WriteLine("Address Tokenizer in C#\r");
@@ -35,19 +35,22 @@ namespace ConsoleApp
                 Console.WriteLine("\nPlease enter a valid address, and then press Enter");
                 input = Console.ReadLine().ToString();
                 if (string.IsNullOrWhiteSpace(input)) continue;
-                string[] words = input.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries); //.Replace(",", "")
 
-                //This searches for every comma preceded and/or followed by any number of spaces, and replaces the comma and spaces with just a comma.
-                address = Regex.Replace(input, " *, *", ",").Replace(".", "");
-                //string[] delimiters = new string[] { "," };
-                //string[] words = address.Split(delimiters, StringSplitOptions.RemoveEmptyEntries); 
+                address = Regex.Replace(input.Replace(".", " ").Replace(",", " "), @"\s+", " ", RegexOptions.Multiline);//Regex.Replace(input, " *, *", ",").Replace(".", "");
 
-                int aptNoIndex = Array.FindIndex(words, t => t.Equals("No", StringComparison.InvariantCultureIgnoreCase));
+                string[] words = input.Split(',').Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToArray(); //with comma separated
+                if (words.Length <= 1)
+                {
+                    words = input.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+                    withComma = false;
+                }
+                 
+                int aptNoIndex = Array.FindIndex(words, t => t.Replace(",", "").Equals("No", StringComparison.InvariantCultureIgnoreCase));
                 if (aptNoIndex >= 0)
                 {
                     string aptNo = words[aptNoIndex] + " " + words[aptNoIndex + 1];
                     outerResponse.AptNo = System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(aptNo.ToLower()).Replace(",", "");
-                    address = address.Replace(aptNo, "");
+                    address = address.Replace(words[aptNoIndex], "").Replace(words[aptNoIndex + 1], "").TrimStart();
                 }
 
                 Regex regex = new Regex(@"^\d{5}(?:\[A-Z]{3})?$");
@@ -78,7 +81,7 @@ namespace ConsoleApp
                 {
                     string firstMatchingCity = DefaultConst.CITITES_GROUP().FirstOrDefault(s
                         => address.IndexOf(s, StringComparison.CurrentCultureIgnoreCase) > -1);
-                    if (!String.IsNullOrEmpty(firstMatchingCity))
+                    if (!string.IsNullOrEmpty(firstMatchingCity))
                     {
                         outerResponse.City = firstMatchingCity;
                         address = Regex.Replace(address, firstMatchingCity + ",", "", RegexOptions.IgnoreCase);
@@ -106,26 +109,26 @@ namespace ConsoleApp
 
                 string firstMatchingStreet = DefaultConst.STREETS_GROUP().FirstOrDefault(s
                     => address.IndexOf(s, StringComparison.CurrentCultureIgnoreCase) > -1);
-                int streetIndex = Array.FindIndex(words, t => t.Equals(firstMatchingStreet, StringComparison.InvariantCultureIgnoreCase));
-                if (streetIndex >= 0)
+                if (!string.IsNullOrEmpty(firstMatchingStreet))
                 {
-                    string streetNo = firstMatchingStreet;
-                    string[] wordsLeft = address.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-                    if (wordsLeft.Length > 1)
-                        foreach (string match in wordsLeft)
-                        {
-                            if (match.Trim().StartsWith(firstMatchingStreet, StringComparison.InvariantCultureIgnoreCase))
-                                streetNo = match.Trim();
-                        }
-                    else
-                        streetNo = words[streetIndex] + " " + words[streetIndex + 1];
+                    int streetIndex = Array.FindIndex(words, t => t.StartsWith(firstMatchingStreet, StringComparison.InvariantCultureIgnoreCase));
+                    if (streetIndex >= 0)
+                    {
+                        string streetNo;
+                        if (withComma)
+                            streetNo = words[streetIndex];
+                        else
+                            streetNo = words[streetIndex] + " " + words[streetIndex + 1];
 
-                    outerResponse.Street = System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(streetNo.ToLower()).Trim();
-                    address = Regex.Replace(address, streetNo + ",", "", RegexOptions.IgnoreCase);
-                    address = Regex.Replace(address, streetNo, "", RegexOptions.IgnoreCase);
+                        outerResponse.Street = System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(streetNo.ToLower()).Trim();
+                        address = Regex.Replace(address, streetNo + ",", "", RegexOptions.IgnoreCase);
+                        address = Regex.Replace(address, streetNo, "", RegexOptions.IgnoreCase);
+                    }
                 }
 
-                string others = System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(address.ToLower()).Replace(",", "").Trim().TrimStart(',').TrimEnd(',');
+                string others = Regex.Replace(System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(address.ToLower()), @"\s+", " ", RegexOptions.Multiline);
+                 
+                //.Replace(",", "").Trim().TrimStart(',').TrimEnd(',')
                 if (!string.IsNullOrEmpty(others))
                     outerResponse.Section = others;
 
