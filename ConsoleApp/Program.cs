@@ -31,6 +31,7 @@ namespace ConsoleApp
 
             do
             {
+                outerResponse = new OuterResponse();
                 // Ask the user to type the address input.  
                 Console.WriteLine("\nPlease enter a valid address, and then press Enter");
                 input = Console.ReadLine().ToString();
@@ -154,10 +155,7 @@ namespace ConsoleApp
 
                 // If all attribute is empty ask user to re-input a valid address
                 if (string.IsNullOrEmpty(outerResponse.AptNo) && string.IsNullOrEmpty(outerResponse.Street) && string.IsNullOrEmpty(outerResponse.PostCode) && string.IsNullOrEmpty(outerResponse.City) && string.IsNullOrEmpty(outerResponse.State))
-                {
                     tryAgain = true;
-                    others = String.Empty;
-                } 
                 else
                     tryAgain = false;
 
