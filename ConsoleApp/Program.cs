@@ -44,13 +44,33 @@ namespace ConsoleApp
                     words = input.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
                     withComma = false;
                 }
-                 
+
+                string aptNo;
                 int aptNoIndex = Array.FindIndex(words, t => t.Replace(",", "").Equals("No", StringComparison.InvariantCultureIgnoreCase));
                 if (aptNoIndex >= 0)
-                {
-                    string aptNo = words[aptNoIndex] + " " + words[aptNoIndex + 1];
+                { 
+                    aptNo = words[aptNoIndex] + " " + words[aptNoIndex + 1];
                     outerResponse.AptNo = System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(aptNo.ToLower()).Replace(",", "");
                     address = address.Replace(words[aptNoIndex], "").Replace(words[aptNoIndex + 1], "").TrimStart();
+                }
+                else
+                {
+                    aptNoIndex = Array.FindIndex(words, t => t.Replace(",", "").StartsWith("No", StringComparison.InvariantCultureIgnoreCase));
+                    if (aptNoIndex >= 0)
+                    {
+                        if (withComma)
+                        {
+                            aptNo = words[aptNoIndex];
+                            outerResponse.AptNo = System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(aptNo.ToLower()).Replace(",", "");
+                            address = address.Replace(words[aptNoIndex], "").TrimStart();
+                        }
+                        else
+                        {
+                            aptNo = words[aptNoIndex] + " " + words[aptNoIndex + 1];
+                            outerResponse.AptNo = System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(aptNo.ToLower()).Replace(",", "");
+                            address = address.Replace(words[aptNoIndex], "").Replace(words[aptNoIndex + 1], "").TrimStart();
+                        }
+                    }
                 }
 
                 Regex regex = new Regex(@"^\d{5}(?:\[A-Z]{3})?$");
@@ -126,7 +146,7 @@ namespace ConsoleApp
                     }
                 }
 
-                string others = Regex.Replace(System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(address.ToLower()), @"\s+", " ", RegexOptions.Multiline);
+                string others = Regex.Replace(System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(address.ToLower()), @"\s+", " ", RegexOptions.Multiline).TrimEnd().TrimStart();
                  
                 //.Replace(",", "").Trim().TrimStart(',').TrimEnd(',')
                 if (!string.IsNullOrEmpty(others))
@@ -134,7 +154,10 @@ namespace ConsoleApp
 
                 // If all attribute is empty ask user to re-input a valid address
                 if (string.IsNullOrEmpty(outerResponse.AptNo) && string.IsNullOrEmpty(outerResponse.Street) && string.IsNullOrEmpty(outerResponse.PostCode) && string.IsNullOrEmpty(outerResponse.City) && string.IsNullOrEmpty(outerResponse.State))
+                {
                     tryAgain = true;
+                    others = String.Empty;
+                } 
                 else
                     tryAgain = false;
 
